@@ -203,6 +203,12 @@ TEST_GROUP( HTTPS_Client_Unit_API );
  */
 TEST_SETUP( HTTPS_Client_Unit_API )
 {
+    /* Reset the shared network interface. */
+    ( void ) memset( &_networkInterface, 0x00, sizeof( IotNetworkInterface_t ) );
+
+    /* This will initialize the library before every test case, which is OK. */
+    TEST_ASSERT_EQUAL_INT( true, IotSdk_Init() );
+    TEST_ASSERT_EQUAL( IOT_HTTPS_OK, IotHttpsClient_Init());
 }
 
 /*-----------------------------------------------------------*/
@@ -212,6 +218,8 @@ TEST_SETUP( HTTPS_Client_Unit_API )
  */
 TEST_TEAR_DOWN( HTTPS_Client_Unit_API )
 {
+    IotHttpsClient_Deinit();
+    IotSdk_Cleanup();
 }
 
 /*-----------------------------------------------------------*/
@@ -221,9 +229,6 @@ TEST_TEAR_DOWN( HTTPS_Client_Unit_API )
  */
 TEST_GROUP_RUNNER( HTTPS_Client_Unit_API )
 {
-    /* Initialize the library once. */
-    IotHttpsClient_Init();
-
     RUN_TEST_CASE( HTTPS_Client_Unit_API, ConnectInvalidParameters);
     RUN_TEST_CASE( HTTPS_Client_Unit_API, ConnectFailure);
     RUN_TEST_CASE( HTTPS_Client_Unit_API, ConnectSuccess);
@@ -241,9 +246,6 @@ TEST_GROUP_RUNNER( HTTPS_Client_Unit_API )
     RUN_TEST_CASE( HTTPS_Client_Unit_API, ReadContentLengthSuccess );
     RUN_TEST_CASE( HTTPS_Client_Unit_API, ReadResponseStatusInvalidParameters );
     RUN_TEST_CASE( HTTPS_Client_Unit_API, ReadResponseStatusSuccess );
-
-    /* Deinitialize the library after the tests. */
-    IotHttpsClient_Deinit();
 }
 
 /*-----------------------------------------------------------*/
@@ -441,6 +443,7 @@ TEST( HTTPS_Client_Unit_API, DisconnectFailure )
 
     /* Test a network close failure. */
     _networkInterface.close = _networkCloseFail;
+    _networkInterface.destroy = _networkDestroySuccess;
     connHandle = _getConnHandle();
     TEST_ASSERT_NOT_NULL( connHandle );
 
@@ -486,7 +489,7 @@ TEST( HTTPS_Client_Unit_API, DisconnectSuccess )
  
     /* Test a successful disconnect when there are no items in the request queue. */
     _networkInterface.close = _networkCloseSuccess;
-    _networkInterface.close = _networkDestroySuccess;
+    _networkInterface.destroy = _networkDestroySuccess;
     connHandle = _getConnHandle();
     TEST_ASSERT_NOT_NULL( connHandle );
 
